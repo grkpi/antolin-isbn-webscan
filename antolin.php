@@ -199,7 +199,7 @@ if ($update_user==true && $updatefaehig==true) {
 		}
 
 	// Update-Anfrage erhalten
-	if ( (isset($_GET["update"])) && ($_GET["update"]=(2*date("Ymd"))) )  { // Update gewünscht
+	if ( (isset($_GET["update"])) && ($_GET["update"]==$getparam) ) { // Update gewünscht
 		if ((!file_exists($csv)) || ($yesterday > $lokalfiletime)) { // keine CSV-Datei oder CSV-Datei älter als Vorgabe
 			$updateprozess = true;
 			}
