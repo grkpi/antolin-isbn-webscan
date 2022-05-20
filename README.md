@@ -1,8 +1,8 @@
 # antolin-isbn-webscan
-Ein Webinterface zum Scannen von ISBN-Buchcodes, identifiziere Bücher mit Antolin-Leselern-Angebot
+Ein Webinterface zum Scannen von ISBN-Buchcodes, identifiziere Bücher mit Antolin-Leseförderungs-Angebot
 
 Dieses Skript ist ein Interface/Website zum Bücherscannen in Schulbüchereien/Schulbibliotheken, die für Ihre 
-Schüler das "Antolin"-Leselernprogramm vom Westermann-Verlag nutzen.
+Schüler das Antolin-Leseförderungsprogramm vom Westermann-Verlag nutzen.
 
 Siehe auch das von Westermann zur Recherche angebotene Interface unter https://antolin.westermann.de.
 Dieses bietet aktuell (Stand: Mai 2022) keine repetitive Eingabemöglichkeit für ISBN-Codes an.
@@ -11,8 +11,9 @@ Frage: Für wen ist dieses Skript gedacht?
 Antwort: Mitarbeiter/Helfer in Schulbüchereien, deren Schulen am "Antolin"-Programm teilnehmen und deren Bibliothekssoftware
 beim Listen/Einpflegen neuer Bücher keine automatische Datenpflege zum "Antolin"-Status des Buches bereitstellen.
 
-Frage: Was kann dieses Skript besser als die Bücher-Suche unter https://antolin.westermann.de?
-Antwort: Es geht viel schneller! Kein Hin- und Her-"Geklicke". Direkter Focus auf dem Eingabefeld für ISBN und nach erfolgter Suche sofort wieder scanbereit.
+Frage: Was kann dieses Skript besser als die Bücher-Suche unter https://antolin.westermann.de/all/extendedsearch.jsp ?
+Antwort: Es geht viel schneller! Kein Hin- und Her-"Geklicke" nach dem Ende der Suche, um eine weitere Abfrage zu starten.
+Direkter Focus auf dem Eingabefeld für ISBN und nach erfolgter Suche sofort wieder scanbereit.
 
 Informationen zu "Antolin" erhalten Sie unter: www.antolin.de (ein Angebot der Westermann Gruppe © Westermann Bildungsmedien Verlag GmbH)
 
