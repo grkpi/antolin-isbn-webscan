@@ -1,7 +1,7 @@
 <?php
 /*
 Dieses Skript ist ein Interface/Website zum Bücherscannen in Schulbüchereien/Schulbibliotheken, die für Ihre 
-Schüler das "Antolin"-Leselernprogramm vom Westermann-Verlag nutzen.
+Schüler das "Antolin"-Leseförderungsprogramm vom Westermann-Verlag nutzen.
 
 Siehe auch das von Westermann zur Recherche angebotene Interface unter https://antolin.westermann.de.
 Dieses bietet aktuell (Stand: Mai 2022) keine repetitive Eingabemöglichkeit für ISBN-Codes an.
@@ -30,12 +30,11 @@ Dieses Programm wird in der Hoffnung bereitgestellt, dass es nützlich sein wird
 der MARKTFÄHIGKEIT oder EIGNUNG FÜR EINEN BESTIMMTEN ZWECK. Siehe die GNU General Public License für weitere Einzelheiten.
 
 Sie sollten eine Kopie der GNU General Public License zusammen mit diesem Programm erhalten haben. Wenn nicht, siehe <https://www.gnu.org/licenses/>. 
-
 */
 
 // Fehlermeldungen anzeigen
-//error_reporting(E_ALL); // aktivieren für Fehlerdarstellung
-//ini_set('display_errors', true);  // aktivieren für Fehlerdarstellung
+//error_reporting(E_ALL); // aktivieren für maximale Fehlerdarstellung
+//ini_set('display_errors', true);  // aktivieren für maximale Fehlerdarstellung
 
 // ################################################ Start Konfiguration ################################################ 
 // Grunddaten für Ihre Installation
@@ -47,7 +46,7 @@ $csv = "db/antolingesamt.csv"; // Pfad und Dateiname für die CSV-Quelldatei (di
 // für MySQL-Verwendung:
 $host     = "localhost";
 $db       = "datenbankname";
-$user     = "datenbanbenutzer";
+$user     = "datenbankbenutzer";
 $password = "datenbankkennwort";
 
 $update_user=true; // Benutzer darf DB aktualisieren, Wertebereich: true/false		
@@ -64,8 +63,8 @@ $delimiter = ';'; // CSV-Trennzeichen in der Antolin-Datei
 
 // ab hier hoffentlich keine Änderung notwendig
 $updateprozess = false; // Initialisierungswert: kein Update der DB notwendig
-if (((extension_loaded('sqlite3')) && (! isset($dbtype))) || ($dbtype=="sqlite")) {
-	$dbtype="sqlite";
+$anzahleintraege = 0; // Anzahl Datenbankeinträge
+if (((extension_loaded('sqlite3')) && (! isset($dbtype))) || (isset($dbtype) && ($dbtype=="sqlite"))) {
 	// Schreibrechte überprüfen
 	$updatefaehig=true;
 	if (! is_file($datenbank)) {
@@ -78,9 +77,9 @@ if (((extension_loaded('sqlite3')) && (! isset($dbtype))) || ($dbtype=="sqlite")
 			$updatefaehig=false;
 	  		}
 		}
-	// check für nicht updatefähige Datenbank		
+				
 	if ($pdo = new PDO('sqlite:'.$datenbank)) {
-		// TODO check: if $updatefaehig==false > DB muss gefüllt sein, ansonsten die()
+		// check für nicht updatefähige Datenbank		
 		if ($updatefaehig==false) {
 			$error=false;
 			$statement = $pdo->query("SHOW TABLES LIKE '%".$table."%';");
@@ -90,7 +89,7 @@ if (((extension_loaded('sqlite3')) && (! isset($dbtype))) || ($dbtype=="sqlite")
 			else {
 				if ($statement = $pdo->query("SELECT count(*) as anzahl FROM ".$table.";")) {
 					$result = $statement->fetch(PDO::FETCH_ASSOC);
-					if ($result["anzahl"]<200000) {
+					if (($anzahleintraege = $result["anzahl"]) < $minrows) {
 						$error=true;
 						}
 					}
@@ -104,26 +103,32 @@ if (((extension_loaded('sqlite3')) && (! isset($dbtype))) || ($dbtype=="sqlite")
 			}
 		// check für updatefähige Datenbank				
 		else {
-			$statement = $pdo->query("SHOW TABLES LIKE '%".$table."%';");
-			if(count($statement)==0) {
-				$updateprozess = true; // Update der DB ist notwendig		
-				}
-			else {
-				if ($statement = $pdo->query("SELECT count(*) as anzahl FROM ".$table.";")) {
-					$result = $statement->fetch(PDO::FETCH_ASSOC);
-					if ($result["anzahl"]<$minrows) {
-						$updateprozess = true;  // Update der DB ist notwendig	
+			try {
+				$statement = $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table'");
+				$result = $statement->fetch(PDO::FETCH_ASSOC);
+				if (empty($result["name"])) {
+					$updateprozess = true; // Update der DB ist notwendig		
+					}
+				else {
+					if ($statement = $pdo->query("SELECT count(*) as anzahl FROM ".$table.";")) {
+						$result = $statement->fetch(PDO::FETCH_ASSOC);
+						if (($anzahleintraege = $result["anzahl"]) < $minrows) {
+							$updateprozess = true;  // Update der DB ist notwendig	
+							}
 						}
 					}
-				}	
+				}
+			catch (PDOException $e) {
+				die ($e);
+				$updateprozess = true;  // Update der DB ist notwendig	
+				}
 			}
 		}
 	else {
 		die("Kein Connect zu Sqlite-Datenbank m&ouml;glich. Manuell auf MySQL-Verwendung umstellen (&#36dbtype=mysql) oder Sqlite-Datenbank unter <i>$datenbank</i> kontrollieren!");
 		}
 	} 
-elseif ((in_array("mysql",PDO::getAvailableDrivers()) && (! isset($dbtype))) || ($dbtype=="mysql")) {
-	$dbtype="mysql";
+elseif ((in_array("mysql",PDO::getAvailableDrivers()) && (! isset($dbtype))) || (isset($dbtype) && ($dbtype=="mysql"))) {
 	$dsn = "mysql:host=$host;dbname=$db;charset=UTF8";
 	try {
 		$options = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION];
@@ -143,13 +148,13 @@ elseif ((in_array("mysql",PDO::getAvailableDrivers()) && (! isset($dbtype))) || 
 	// CHECK mysql, ob Tabellen vorhanden
 	$statement = $pdo->query("SHOW TABLES LIKE '%".$table."%';");
 	$result = $statement->fetch(PDO::FETCH_NUM);
-	if (! is_object($result) ||  trim($result[0])<>$table) {
+	if (trim($result[0])<>$table) {
 		$updateprozess = true;  // Update der DB ist notwendig		
 		}
 	else {
 		if ($statement = $pdo->query("SELECT count(*) as anzahl FROM ".$table.";")) {
 			$result = $statement->fetch(PDO::FETCH_ASSOC);
-			if ($result["anzahl"]<$minrows) {
+			if (($anzahleintraege = $result["anzahl"]) < $minrows) {
 				$updateprozess = true;  // Update der DB ist notwendig	
 				}
 			}
@@ -160,7 +165,7 @@ elseif ((in_array("mysql",PDO::getAvailableDrivers()) && (! isset($dbtype))) || 
 	}
 
 // Kontrolle der lokalen und remote CSV Datei
-$filetime = "<b>unbekannt</b>";
+$filetime = "<span class='bold'>unbekannt</span>";
 $checkremote=true;
 $update=""; // Standard: kein Update notwendig, CSV vorhanden und nicht veraltet
 if (file_exists($csv)) {
@@ -176,7 +181,6 @@ if (file_exists($csv)) {
 // Get-Parameter
 $getparam = sha1($salt+date("Ymd"));
 if ($update_user==true && $updatefaehig==true) {
-
 	// hier geht es um die Antolin-CSV-Datei bei Westermann	
 	if ($checkremote==true) {
 		// Versuche Remote-Datei lesend zu Öffnen 
@@ -185,39 +189,40 @@ if ($update_user==true && $updatefaehig==true) {
 	   	$update=" - <a href=".basename($_SERVER["SCRIPT_FILENAME"])."?update=".$getparam.">UPDATE starten</a>"; // Remote-Datei vorhanden, biete Update an
 			}
 		else {
-			$update=" - Antolin-Daten nicht verf&uuml;gbar unter: ".$url; // Update wäre notwendig, aber keine Remote-Datei auffindbar
+			$update=" - Update nicht verf&uuml;gbar unter: ".$url; // Update wäre notwendig, aber keine Remote-Datei auffindbar
 			// alternativ per CURL
 			$ch = curl_init($url);
 			curl_setopt($ch, CURLOPT_NOBODY, true);
+			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
 	  		curl_exec($ch);
 	  		$code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 	  		curl_close($ch);
-	  		if($code != 200){
+	  		if($code == 200){
 				$update=" - <a href=".basename($_SERVER["SCRIPT_FILENAME"]).".php?update=".$getparam.">UPDATE starten</a>"; // Remote-Datei vorhanden, biete Update an
 				}
 			}
-		}
+		}	
 
 	// Update-Anfrage erhalten
-	if ( (isset($_GET["update"])) && ($_GET["update"]==$getparam) ) { // Update gewünscht
+	if ( (isset($_GET["update"])) && ($_GET["update"]==$getparam) )  { // Update gewünscht
 		if ((!file_exists($csv)) || ($yesterday > $lokalfiletime)) { // keine CSV-Datei oder CSV-Datei älter als Vorgabe
 			$updateprozess = true;
 			}
 		}
 	}
 
+// credits to fcingolani, thanks for publishing "import_csv_to_sqlite.php", see: https://gist.github.com/fcingolani/5364532
 function import_csv_to_pdotable(&$pdo, $csv_path, $options = array())
 {
 	global $delimiter,$table;		
 	extract($options);
 	
-	if (($csv_handle = fopen($csv_path, "r")) === FALSE) {
-		die('Einlesen der CSV-Quelldatei fehlgeschlagen!');
-		}
+	// kein Error-handling da gerade geschrieben
+	$csv_handle = fopen($csv_path, "r");
 		
 	if(! isset($fields)){
 		$fields = array_map(function ($field) {
-			return preg_replace("/[^A-Z0-9]-_|\s+/i", '', $field);
+			return strtolower(preg_replace("/[^A-Z0-9]-_|\s+/i", '', $field));
 		}, fgetcsv($csv_handle, 0, $delimiter));
 	}
 
@@ -247,7 +252,7 @@ function import_csv_to_pdotable(&$pdo, $csv_path, $options = array())
 			}
 		$insert_sth->execute(str_replace("'","",str_replace("\"", "", $data)));
 		$inserted_rows++;
-		echo "Schreibe Datensatz Nr. $inserted_rows <br>";
+		echo "Schreibe Datensatz Nr. ".str_pad($inserted_rows, 6, "0", STR_PAD_LEFT)." <br>";
 		flush();
 		ob_flush();
 	}
@@ -286,63 +291,119 @@ if (isset($_GET["isbn"])) {
 ?>
 <!DOCTYPE html>
 <html lang="de">
+<style type="text/css">
+
+body {
+	font-family: sans-serif;
+	font-size: 1.1em;
+	background-color: #fafafa;
+	margin: 25px;
+	cursor: Default;
+	}
+	
+.ergebnis {
+	padding: 15px;
+	margin-top: 25px;
+	margin-bottom: 75px;
+	background-color: #f2f2f2;
+	margin-right: 25px;
+	border-radius: 25px;
+	}
+	
+table {
+	padding: 5px;
+	background-color: #5ff3eb;
+	border-spacing: 15px;
+	margin-top: 35px;
+	margin-right: 25px;
+	border-radius: 15px;
+	}
+
+.bold {
+	font-weight: bold;
+	}
+	
+.update {
+	background-color: #f2f2f2;
+	right: 50px;
+	position: absolute;
+	padding: 15px;
+	top: 25px;
+	margin-top: 0px;
+	margin-bottom: 0px;
+	border-radius: 25px;
+	}
+
+div {
+	padding-bottom: 20px;
+	}
+	
+input[type="text"] {
+	padding: 5px;
+	margin: 5px;
+	border-width: 1px;
+	font-size: 1.3em;
+	border-radius: 10px;
+	}	
+
+button[type="submit"],
+button[type="button"] {
+	background-color: #5ff3eb;
+	font-size: 1.1em;
+	border-radius: 10px;
+	}	
+
+</style>
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Antolin-Recherche nach ISBN</title>
 </head>
-<body>
-<b>Antolin Recherche per ISBN-Scan</b>
-<p>
-<div style="align:right;">Letztes Update der Antolin-Daten am: 
 <?php 
-// Letzter Download der CSV-Datei
-echo $filetime;
+// Datum/Uhrzeit letzter Download der CSV-Datei
+echo "<span class=\"update\">Letztes Update der Antolin-Daten am: ".$filetime;
 // ggf. Link oder Info zum Quelldaten-Update anbieten
-if ($update_user==true) {
-	echo $update;
-	}
+echo ($update_user) ? $update : "";
+echo "<br>Anzahl B&uuml;cher-Eintr&auml;ge in der Datenbank: ".$anzahleintraege;
+echo "</span>";
 ?>
-</div>
 <br>
 <form id="form" name="suche" method="GET">
- <p>
+<body>
+<div class="bold">Antolin Recherche per ISBN-Scan</div>
 <label title="ISBN-Nummer zur Recherche.&#10;Zugriffstaste: I">
 <ins>I</ins>SBN: &nbsp; <input type="text" name="isbn" size="30" minlength="10" maxlength="25" required="required" accesskey="i" autofocus="autofocus" placeholder="ISBN 10/13 mit oder ohne Bindestriche" spellcheck="false" onChange="javascript:document.suche.submit();">
 </label> &nbsp; 
 <button type="submit" title="Das Formular absenden">Absenden</button>
-</p>
 </form>
 <?php
 // Anzeige Suchergebnisse
 if (isset($_GET["isbn"])) {
-	echo "<p>";
+	echo "<div class=\"ergebnis\">";
 	if ($anzahl>0) {
 		if ($anzahl==1) {
-			echo "<b>Zu diesem Buch wurde folgender Antolin-Eintrag gefunden:</b><p>";}
+			echo "<span class=\"bold\">Zu diesem Buch wurde folgender Antolin-Eintrag gefunden:</span>";}
 		else {
-			echo "<b>Zu Ihrer Eingabe ".$_GET["isbn"]." wurden folgende Antolin-Eintr&auml;ge gefunden:</b><p>";}
-		echo "<table style='border-spacing: 20px;'>"; 
+			echo "<span class=\"bold\">Zu Ihrer Eingabe ".$_GET["isbn"]." wurden folgende Antolin-Eintr&auml;ge gefunden:</span>";}
+		echo "<table>"; 
 		echo "<tr><th>Autor</th><th>Titel</th><th>Verlag</th><th valign=top align=left>f&uuml;r Klasse</th><th valign=top align=left>Antolin verf&uuml;gbar seit</th><th>Anzahl gelesen</th><th>ISBN-13</th><tr>";
 		foreach ($result as $row) {
 			echo "<tr>";
-			echo "<td valign=top align=left>".$row["Autor"]."</td>";
-			echo "<td valign=top align=left>".$row["Titel"]."</td>";
-			echo "<td valign=top align=left>".$row["Verlag"]."</td>";
-			echo "<td valign=top align=left>".$row["Klasse"]."</td>";
-			echo "<td valign=top align=left>".$row["inAntolinseit"]."</td>";
+			echo "<td valign=top align=left>".$row["autor"]."</td>";
+			echo "<td valign=top align=left>".$row["titel"]."</td>";
+			echo "<td valign=top align=left>".$row["verlag"]."</td>";
+			echo "<td valign=top align=left>".$row["klasse"]."</td>";
+			echo "<td valign=top align=left>".$row["inantolinseit"]."</td>";
 			echo "<td valign=top align=left>".$row["wieoftgelesen"]."</td>";
-			echo "<td valign=top align=left>".$row["ISBN-13"]."</td>";						
+			echo "<td valign=top align=left>".$row["isbn-13"]."</td>";						
 			echo "</tr>";
 			}
-		echo "</table></p>";
+		echo "</table>";
 		}
 	else {
-		echo "<b>Zu Ihrer Eingabe ".$_GET["isbn"]." konnte kein Antolin-Eintrag gefunden werden!</b>";
+		echo "<span class=\"bold\">Zu Ihrer Eingabe ".$_GET["isbn"]." konnte kein Antolin-Eintrag gefunden werden!</span>";
 		}
-	echo "</p>";	
+	echo "</div>";	
 	}
 ?>
-</p><br>&nbsp;<br>
 </body>
 </html>
