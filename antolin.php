@@ -300,6 +300,7 @@ if (isset($_GET["isbn"])) {
 ?>
 <!DOCTYPE html>
 <html lang="de">
+<head>
 <style type="text/css">
 
 body {
@@ -363,10 +364,10 @@ button[type="button"] {
 	}	
 
 </style>
-<head>
+<title>Antolin-Recherche f&uuml;r B&uuml;chereien</title>
 <meta charset="utf-8">
-<title>Antolin-Recherche: ISBN-Scan</title>
 </head>
+<body>
 <?php 
 // Datum/Uhrzeit letzter Download der CSV-Datei
 echo "<span class=\"update\">Letztes Update der Antolin-Daten am: ".$filetime;
@@ -377,7 +378,6 @@ echo "</span>";
 ?>
 <br>
 <form id="form" name="suche" method="GET">
-<body>
 <div class="bold">Antolin Recherche per ISBN-Scan</div>
 <label title="ISBN-Nummer zur Recherche.&#10;Zugriffstaste: I">
 <ins>I</ins>SBN: &nbsp; <input type="text" name="isbn" size="30" minlength="10" maxlength="25" required="required" accesskey="i" autofocus="autofocus" placeholder="ISBN 10/13 mit oder ohne Bindestriche" spellcheck="false" onChange="javascript:document.suche.submit();">
@@ -409,7 +409,7 @@ if (isset($_GET["isbn"])) {
 		echo "</table>";
 		}
 	else {
-		echo "<span class=\"bold\">Zu Ihrer Eingabe ".$_GET["isbn"]." konnte kein Antolin-Eintrag gefunden werden!</span>";
+		echo "<span class=\"bold\">Zu Ihrer Eingabe ".$_GET["isbn"]." konnte kein Antolin-Eintrag gefunden werden!<p>Allerdings ist erfahrungsgem&auml;&szlig; eine Suche auf <a target=\"new\" href=\"https://antolin.westermann.de/\">https://antolin.westermann.de/</a> nach dem Buchtitel sinnvoll,<br>da bei etlichen B&uuml;chern der ISBN-Eintrag nicht korrekt ist oder das Buch bei z.B. Neuauflage einen anderen ISBN-Eintrag bekommen hat.</p></span>";
 		}
 	echo "</div>";	
 	}
