@@ -1,4 +1,8 @@
 # antolin-isbn-webscan
+
+Information for English-speaking interested parties:
+This script is intended for use in school libraries that use a reader encouragement program from a German publisher. Therefore, it is written in German.
+
 Ein Webinterface zum Scannen von ISBN-Buchcodes, identifiziere Bücher mit Antolin-Leseförderungs-Angebot
 
 Dieses Skript ist ein Interface/Website zum Bücherscannen in Schulbüchereien/Schulbibliotheken, die für Ihre 
@@ -24,3 +28,9 @@ Die "Antolin"-Bücher erhalten bei uns eine farbliche Kennzeichnung auf dem Buch
 identifizieren können. 
 
 Dieses Skript wird Ihnen zur Verfügung gestellt von: Georg Künzel <schulbuecherei@7days-24hours.com>, © 2022
+
+Systemanforderungen:
+
+Webserver mit PHP-Unterstützung und - für den Datenimport - von PHP aus schreibfähiges Verzeichnis: nginx, apache, etc.
+PHP: lauffähig ab Version 5.6, PDO-Unterstützung für Sqlite oder Mysql
+Datenbank: Sqlite ab Version 3 oder Mysql (für andere SQL-Server einfach die Variable $dsn anpassen)
