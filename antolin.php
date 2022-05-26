@@ -30,6 +30,7 @@ Dieses Programm wird in der Hoffnung bereitgestellt, dass es nützlich sein wird
 der MARKTFÄHIGKEIT oder EIGNUNG FÜR EINEN BESTIMMTEN ZWECK. Siehe die GNU General Public License für weitere Einzelheiten.
 
 Sie sollten eine Kopie der GNU General Public License zusammen mit diesem Programm erhalten haben. Wenn nicht, siehe <https://www.gnu.org/licenses/>. 
+
 */
 
 // Fehlermeldungen anzeigen
@@ -64,6 +65,14 @@ $delimiter = ';'; // CSV-Trennzeichen in der Antolin-Datei
 // ab hier hoffentlich keine Änderung notwendig
 $updateprozess = false; // Initialisierungswert: kein Update der DB notwendig
 $anzahleintraege = 0; // Anzahl Datenbankeinträge
+
+if (! extension_loaded('pdo')) {
+	die("Kein PDO-Support im PHP vorhanden. Bitte installieren!");
+	}	
+elseif ( (! extension_loaded('pdo_sqlite')) && (! extension_loaded('pdo_mysql')) ) { 
+	die("Kein PDO-Support f&uuml;r Mysql oder Sqlite im PHP vorhanden. Bitte installieren oder f&uuml; anderen SQL-Server dieses Skript ab&auml;ndern (&#36dbtype auf mysql stellen, &#36dsn anpassen und diesen Check ausschalten)");
+	}	
+
 if (((extension_loaded('sqlite3')) && (! isset($dbtype))) || (isset($dbtype) && ($dbtype=="sqlite"))) {
 	// Schreibrechte überprüfen
 	$updatefaehig=true;
@@ -77,49 +86,49 @@ if (((extension_loaded('sqlite3')) && (! isset($dbtype))) || (isset($dbtype) && 
 			$updatefaehig=false;
 	  		}
 		}
-				
 	if ($pdo = new PDO('sqlite:'.$datenbank)) {
 		// check für nicht updatefähige Datenbank		
 		if ($updatefaehig==false) {
-			$error=false;
-			$statement = $pdo->query("SHOW TABLES LIKE '%".$table."%';");
-			if(count($statement)==0) {
-				$error=true;
-				}
-			else {
-				if ($statement = $pdo->query("SELECT count(*) as anzahl FROM ".$table.";")) {
-					$result = $statement->fetch(PDO::FETCH_ASSOC);
-					if (($anzahleintraege = $result["anzahl"]) < $minrows) {
-						$error=true;
-						}
-					}
-				else {
-					$error=true;
-					}
-				}
-			if($error==true) {	
-				die("Die SQL-Datenbank ist nicht schreibbar (somit nicht updatef&auml;hig) und die ".$table."-Tabelle hat zu wenig (".$result["anzahl"].") Eintr&auml;ge. Die Tabelle manuell mit Daten f&uuml;llen!");
-				}
-			}
-		// check für updatefähige Datenbank				
-		else {
 			try {
-				$statement = $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table'");
-				$result = $statement->fetch(PDO::FETCH_ASSOC);
-				if (empty($result["name"])) {
-					$updateprozess = true; // Update der DB ist notwendig		
+				$error=false;
+				$statement = $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' and name='".$table."';");
+				if(count($statement)==0) {
+					$error=true;
 					}
 				else {
 					if ($statement = $pdo->query("SELECT count(*) as anzahl FROM ".$table.";")) {
 						$result = $statement->fetch(PDO::FETCH_ASSOC);
 						if (($anzahleintraege = $result["anzahl"]) < $minrows) {
-							$updateprozess = true;  // Update der DB ist notwendig	
+							$error=true;
 							}
 						}
+					else {
+						$error=true;
+						}
+					}
+				if($error==true) {	
+					die("Die Sqlite-Datenbank ist nicht schreibbar (somit nicht updatef&auml;hig) und die ".$table."-Tabelle hat zu wenig (".(int)$result["anzahl"].") Eintr&auml;ge. Die Tabelle bitte manuell mit Daten f&uuml;llen!");
+					}
+				}
+			catch (PDOException $e) {				
+				die("Die Sqlite-Datenbank ist nicht schreibbar (somit nicht updatef&auml;hig) und die ".$table."-Tabelle konnte nicht gelesen werden. Die Tabelle bitte manuell mit Daten f&uuml;llen!");					
+				}		
+			}
+		// check für updatefähige Datenbank				
+		else {
+			try {
+				if ($statement = $pdo->query("SELECT count(*) as anzahl FROM ".$table.";")) {
+					$result = $statement->fetch(PDO::FETCH_ASSOC);
+					if (($anzahleintraege = $result["anzahl"]) < $minrows) {
+						$updateprozess = true;  // Update der DB ist notwendig	
+						}
+					}
+				else {
+					$updateprozess = true;  // Update der DB ist notwendig	
 					}
 				}
 			catch (PDOException $e) {
-				die ($e);
+				echo "<p><b>".$table."-Tabelle in Sqlite-Datenbank konnte nicht gelesen werden, versuche Tabelle neu aufzubauen. Fehlermeldung:<br></b>".$e."</p>";
 				$updateprozess = true;  // Update der DB ist notwendig	
 				}
 			}
@@ -142,7 +151,7 @@ elseif ((in_array("mysql",PDO::getAvailableDrivers()) && (! isset($dbtype))) || 
 			die("Kein Connect zu MySQL-Datenbank m&ouml;glich. Nachfolgenden Fehler beheben oder auf Sqlite umstellen (hierzu &#36dbtype=mysql auskommentieren)!<br>MySQL-Ausgabe: ".$e->getMessage());
 			}
 		else {
-			die("Kein Connect zu MySQL-Datenbank m&ouml;glich. Nachfolgenden Fehler beheben oder auf Sqlite umstellen (hierzu &#36dbtype=sqlstring oder auskommentieren)!<br>MySQL-Ausgabe: ".$e->getMessage());	
+			die("Kein Connect zu MySQL-Datenbank m&ouml;glich. Nachfolgenden Fehler beheben oder auf Sqlite umstellen (hierzu &#36dbtype=sqlite oder auskommentieren)!<br>MySQL-Ausgabe: ".$e->getMessage());	
 			}
 		}
 	// CHECK mysql, ob Tabellen vorhanden
@@ -356,7 +365,7 @@ button[type="button"] {
 </style>
 <head>
 <meta charset="utf-8">
-<title>Antolin-Recherche nach ISBN</title>
+<title>Antolin-Recherche: ISBN-Scan</title>
 </head>
 <?php 
 // Datum/Uhrzeit letzter Download der CSV-Datei
