@@ -40,10 +40,10 @@ Sie sollten eine Kopie der GNU General Public License zusammen mit diesem Progra
 // ################################################ Start Konfiguration ################################################ 
 // Grunddaten für Ihre Installation
 //$dbtype="mysql"; // manuell einstellen für forcierte Datenbank-Auswahl, standardmäßig ist dieser Wert auskommentiert, Wertebereich: mysql/sqlite
-$datenbank = "db/antolin.db"; // Pfad und Dateiname für Sqlite-Datei/Datenbank auf Ihrem Webserver
+$csv = "db/antolingesamt.csv"; // Pfad und Dateiname für die CSV-Quelldatei (die vom Westermann-Verlag zum Download angeboten wird) auf Ihrem Webserver
 
 // für Sqlite-Verwendung:
-$csv = "db/antolingesamt.csv"; // Pfad und Dateiname für die CSV-Quelldatei (die vom Westermann-Verlag zum Download angeboten wird) auf Ihrem Webserver
+$datenbank = "db/antolin.db"; // Pfad und Dateiname für Sqlite-Datei/Datenbank auf Ihrem Webserver
 // für MySQL-Verwendung:
 $host     = "localhost";
 $db       = "datenbankname";
@@ -207,7 +207,7 @@ if ($update_user==true && $updatefaehig==true) {
 	  		$code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 	  		curl_close($ch);
 	  		if($code == 200){
-				$update=" - <a href=".basename($_SERVER["SCRIPT_FILENAME"]).".php?update=".$getparam.">UPDATE starten</a>"; // Remote-Datei vorhanden, biete Update an
+				$update=" - <a href=".basename($_SERVER["SCRIPT_FILENAME"])."?update=".$getparam.">UPDATE starten</a>"; // Remote-Datei vorhanden, biete Update an
 				}
 			}
 		}	
